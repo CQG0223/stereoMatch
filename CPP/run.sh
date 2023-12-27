@@ -1,0 +1,1 @@
+./build/sliding_window_test /media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/L/7_18L.bmp /media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/R/7_18R.bmp 0 64
