@@ -1,0 +1,4 @@
+#排除.vscode目录
+.vscode/
+build/
+_pycache_/

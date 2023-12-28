@@ -104,7 +104,7 @@ private:
     std::vector<std::pair<uint16,uint16>> img_right_mask_;
 
     /** \brief init cost */
-    uint8* cost_init_;
+    uint32* cost_init_;
 
     /** \brief left image disparity*/
     float32* disp_left_;

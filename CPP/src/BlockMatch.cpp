@@ -1,6 +1,6 @@
 /* -*-C++-* stereoMatch - Copyright (C) 2023
 * Author    :QG Chen
-* Describle: implement if block match
+* Describle: implement for block match
 */
 #include<chrono>
 #include<cstdio>
@@ -42,11 +42,15 @@ bool BlockMatch::Initialize(const sint32& width, const sint32& height,const BMOp
 
     //匹配代价初始化
     const sint32 size = width * height * disp_range;
-    cost_init_ = new uint8[size]();
+    cost_init_ = new uint32[size]();
+    std::fill(cost_init_,cost_init_+size,UINT32_MAX);
 
     //视差图初始化
     disp_left_ = new float32[image_size]();
     disp_right_ = new float32[image_size]();
+    std::fill(disp_left_,disp_left_+image_size,Invalid_float);
+    std::fill(disp_right_,disp_right_+image_size,Invalid_float);
+    
     is_initialized_ = cost_init_ && disp_left_ && disp_right_ && img_left_ && img_right_ && block_;
     
     return is_initialized_;
@@ -86,33 +90,34 @@ bool BlockMatch::Match(const uint8* img_left,const uint8* img_right,float32* dis
     img_right_ = img_right;
     source_process_effective();
     
-    auto start = std::chrono::steady_clock::now();
+    auto substart = std::chrono::steady_clock::now();
 
     //代价计算
     ComputeCost();
 
-    auto end = std::chrono::steady_clock::now();
-    auto tt = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    auto subend = std::chrono::steady_clock::now();
+    auto tt = std::chrono::duration_cast<std::chrono::milliseconds>(subend - substart);
     printf("computing cost! timing :	%lf s\n", tt.count() / 1000.0);
-    start = std::chrono::steady_clock::now();
+    substart = std::chrono::steady_clock::now();
 
     //视差计算
     ComputeDisparity();
-    end = std::chrono::steady_clock::now();
-    tt = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    subend = std::chrono::steady_clock::now();
+    tt = std::chrono::duration_cast<std::chrono::milliseconds>(subend - substart);
     printf("computing disparities! timing :	%lf s\n", tt.count() / 1000.0);
-    start = std::chrono::steady_clock::now();
 
     //输出视差图
     std::memcpy(disp_left,disp_left_,height_ * width_ * sizeof(float32));
     return true;
-}   
+}
 
 void BlockMatch::ComputeCost() const{
     const sint32& min_disparity = option_.min_disparity;
     const sint32& max_disparity = option_.max_disparity;
     const sint32 disp_range = max_disparity - min_disparity;
+    const sint8& win_size = option_.window_size;
 
+    auto half = (win_size - 1)/2;
     //逐像素计算匹配代价
     for(auto left:img_left_mask_){
         auto i = left.first;
@@ -120,13 +125,14 @@ void BlockMatch::ComputeCost() const{
         for (auto d = min_disparity; d < max_disparity; d++)
             {
                 auto& cost = cost_init_[(i * width_ +j)*disp_range + d - min_disparity];//获取对应cost位置的引用
-                if(j - max_disparity/2 < 0 || j + max_disparity/2 >= width_){
-                    cost = UINT8_MAX / 2;
+                auto dd = d - (max_disparity / 2);
+                if(j - half < 0 || j + half >= width_ || i - half < 0 || i + half >= height_||
+                    j+dd <= 0 || j+dd >= width_ - 1){
+                    //cost = UINT32_MAX;
                     continue;
                 }
-                auto dd = d - (max_disparity / 2);
                 auto right = std::pair<uint16,uint16>(i,j+dd);
-                block_->cost_calculate_SAD(left,right,img_left_,img_right_,cost);
+                cost = block_->cost_calculate_SAD(left,right,img_left_,img_right_);
             }
     }
 }
@@ -153,7 +159,7 @@ void BlockMatch::ComputeDisparity() const{
         auto j = val.second;
         uint16 min_cost = UINT16_MAX;
         uint16 sec_min_cost = UINT16_MAX;
-        sint32 best_disparity = 0;
+        sint32 best_disparity = - (max_disparity - min_disparity) + 1;
 
         //遍历视差范围内的所有代价值，输出最小代价值及对应的视差值
         for(sint32 d = min_disparity;d < max_disparity; d++){
@@ -161,7 +167,7 @@ void BlockMatch::ComputeDisparity() const{
             const auto& cost = cost_local[d_inx] = cost_init_[i * width * disp_range + j * disp_range + d_inx];
             if(min_cost > cost){
                 min_cost = cost;
-                best_disparity = d;
+                best_disparity = d - (max_disparity - min_disparity)/2;
             }
         }
         if(is_check_unique){
@@ -181,10 +187,13 @@ void BlockMatch::ComputeDisparity() const{
         }
 
         //无效像素筛选
-        if(best_disparity == min_disparity || best_disparity == max_disparity - 1){
+        auto ccc = (max_disparity - min_disparity) - 1;
+        if(best_disparity == -ccc || best_disparity == ccc){
             disparity[i * width + j] = Invalid_float;
             continue;
         }
+        disparity[i * width + j] = static_cast<float32>(best_disparity);
+        /*
         // 最优视差前一个视差的代价值cost_1，后一个视差的代价值cost_2
         const sint32 idx_1 = best_disparity - 1 - min_disparity;
         const sint32 idx_2 = best_disparity + 1 - min_disparity;
@@ -193,6 +202,7 @@ void BlockMatch::ComputeDisparity() const{
         // 解一元二次曲线极值
         const uint16 denom = std::max(1, cost_1 + cost_2 - 2 * min_cost);
         disparity[i * width + j] = static_cast<float32>(best_disparity) + static_cast<float32>(cost_1 - cost_2) / (denom * 2.0f);
+        */
     }
 }
 bool BlockMatch::Reset(const uint32& width, const uint32& height,const uint8 winsize, const BMOption& option){

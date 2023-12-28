@@ -35,8 +35,8 @@ namespace bm_util
 		 * \param tar_pointer		input,image target block data
 		 * \param cost      		output, return cost value
 		*/
-		bool cost_calculate_SAD(std::pair<uint16,uint16> left_center,std::pair<uint16,uint16> right_center,
-		const uint8* left_pointer,const uint8* right_pointer,int32_t cost){
+		uint32_t cost_calculate_SAD(std::pair<uint16,uint16> left_center,std::pair<uint16,uint16> right_center,
+		const uint8* left_pointer,const uint8* right_pointer){
 			auto const left_raws = left_center.first;
 			auto const left_cols = left_center.second;
 			auto const left_index = left_raws*image_width_ + left_cols;
@@ -51,7 +51,7 @@ namespace bm_util
 			}
 			//在窗口内逐像素计算差
 			auto win_half = (win_height_ - 1)/2;
-			int32_t cost_val = 0;
+			uint32_t cost_val = 0;
 			for (auto i = -win_half; i <= win_half; i++)
 			{
 				for (auto j = -win_half; j <= win_half; j++)
@@ -61,9 +61,7 @@ namespace bm_util
 					cost_val += abs(static_cast<int32_t>(src_val) - static_cast<int32_t>(tar_val));
 				}
 			}
-			if(cost_val < 0) return false;
-			cost = cost_val;
-			return true;
+			return cost_val;
 		}
 	};
 }

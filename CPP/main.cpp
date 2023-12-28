@@ -30,8 +30,8 @@ int main(int argv, char **argc)
     cv::Mat src_img_left = cv::imread(path_left,cv::IMREAD_GRAYSCALE);
     cv::Mat src_img_right = cv::imread(path_right,cv::IMREAD_GRAYSCALE);
     cv::Mat img_left,img_right;
-    cv::resize(src_img_left,img_left,cv::Size(640,480));
-    cv::resize(src_img_right,img_right,cv::Size(640,480));
+    cv::resize(src_img_left,img_left,cv::Size(1024,1024));
+    cv::resize(src_img_right,img_right,cv::Size(1024,1024));
 
     if(img_left.data == nullptr || img_right.data == nullptr){
         std::cout<<"读入图像失败!"<<std::endl;
@@ -59,7 +59,7 @@ int main(int argv, char **argc)
     bm_option.min_disparity = argv < 4 ? 0 :atoi(argc[3]);
     bm_option.max_disparity = argv < 5 ? 64 : atoi(argc[4]);
     //框大小设置
-    bm_option.window_size = 11;
+    bm_option.window_size = 3;
     //一致性检查
     bm_option.is_check_lr = false;
     bm_option.lrcheck_thres = 1.0f;
@@ -88,7 +88,7 @@ int main(int argv, char **argc)
     printf("BM Matching...\n");
     start = std::chrono::steady_clock::now();
     // disparity数组保存子像素的视差结果
-    auto disparity = new float32[uint32(width * height)]();
+    auto disparity = new float32[width * height]();
     if (!bm.Match(bytes_left, bytes_right, disparity)) {
         std::cout << "BM匹配失败！" << std::endl;
         return -2;
@@ -111,6 +111,7 @@ int main(int argv, char **argc)
             }
         }
     }
+
     for (sint32 i = 0; i < height; i++) {
         for (sint32 j = 0; j < width; j++) {
             const float32 disp = disparity[i * width + j];
@@ -118,7 +119,8 @@ int main(int argv, char **argc)
                 disp_mat.data[i * width + j] = 0;
             }
             else {
-                disp_mat.data[i * width + j] = static_cast<uchar>((disp - min_disp) / (max_disp - min_disp) * 255);
+                auto ccc = static_cast<uchar>((disp - min_disp) / (max_disp - min_disp) * 255);
+                disp_mat.data[i * width + j] = ccc;
             }
         }
     }
@@ -133,10 +135,6 @@ int main(int argv, char **argc)
     // 释放内存
     delete[] disparity;
     disparity = nullptr;
-    delete[] bytes_left;
-    bytes_left = nullptr;
-    delete[] bytes_right;
-    bytes_right = nullptr;
 
     system("pause");
     return 0;

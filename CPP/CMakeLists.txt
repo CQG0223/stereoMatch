@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(sliding_window_test)
 
-set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Debug)
 set(SOURCE_DIR "src")
 set(INCLU_DIR "include")
 
