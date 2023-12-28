@@ -30,8 +30,8 @@ int main(int argv, char **argc)
     cv::Mat src_img_left = cv::imread(path_left,cv::IMREAD_GRAYSCALE);
     cv::Mat src_img_right = cv::imread(path_right,cv::IMREAD_GRAYSCALE);
     cv::Mat img_left,img_right;
-    cv::resize(src_img_left,img_left,cv::Size(1024,1024));
-    cv::resize(src_img_right,img_right,cv::Size(1024,1024));
+    cv::resize(src_img_left,img_left,cv::Size(1024,896));
+    cv::resize(src_img_right,img_right,cv::Size(1024,896));
 
     if(img_left.data == nullptr || img_right.data == nullptr){
         std::cout<<"读入图像失败!"<<std::endl;
