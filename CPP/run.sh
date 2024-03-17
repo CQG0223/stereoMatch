@@ -1,1 +1,1 @@
-./build/sliding_window_test /media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/L/10_18L.bmp /media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/R/10_18R.bmp 0 800
+./build/sliding_window_test /media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/L/6_18.bmp /media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/R/6_18.bmp 0 800

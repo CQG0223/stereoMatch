@@ -2,8 +2,8 @@
 * Author    :QG Chen
 * Describle: implement if block match util
 */
-#pragma onece
-#include"bm_types.h"
+#ifndef BMUTIL_H_
+#define BMUTIL_H_
 #include <string>
 
 #ifndef SAFE_DELETE
@@ -15,13 +15,13 @@ namespace bm_util
 	class BM_Unit
 	{
 	private:
-		uint8 win_width_;
-		uint8 win_height_;
-		sint32 image_width_;
-		sint32 image_height_;
+		uint16_t win_width_;
+		uint16_t win_height_;
+		uint16_t image_width_;
+		uint16_t image_height_;
 	public:
-		BM_Unit(const uint8 win_height,const uint8  win_width, 
-				const sint32 image_height,const sint32 image_width){
+		BM_Unit(const uint8_t win_height,const uint8_t  win_width, 
+				const int image_height,const int image_width){
 			win_height_ = win_height;
 			win_width_ = win_width;
 			image_height_ = image_height;
@@ -35,8 +35,8 @@ namespace bm_util
 		 * \param tar_pointer		input,image target block data
 		 * \param cost      		output, return cost value
 		*/
-		uint32_t cost_calculate_SAD(std::pair<uint16,uint16> left_center,std::pair<uint16,uint16> right_center,
-		const uint8* left_pointer,const uint8* right_pointer){
+		uint32_t cost_calculate_SAD(std::pair<uint16_t,uint16_t> left_center,std::pair<uint16_t,uint16_t> right_center,
+		const uint8_t* left_pointer,const uint8_t* right_pointer){
 			auto const left_raws = left_center.first;
 			auto const left_cols = left_center.second;
 			auto const left_index = left_raws*image_width_ + left_cols;
@@ -65,3 +65,4 @@ namespace bm_util
 		}
 	};
 }
+#endif // !BMUTIL_H_

@@ -2,28 +2,29 @@
 * Author    :QG Chen
 * Describle: implement if block match
 */
-#pragma onece
+#ifndef BLOCKMATCH_H_
+#define BLOCKMATCH_H_
+
 #include<vector>
 #include<limits>
-#include"bm_types.h"
 #include"bm_util.h"
 
-constexpr auto Invalid_float = std::numeric_limits<float32>::infinity();
+constexpr auto Invalid_float = std::numeric_limits<float>::infinity();
 
 /**
      * \brief BM parameter struct
     */
    struct BMOption
    {
-    sint32 min_disparity;   //minimum disparity
-    sint32 max_disparity;   //maximum disparity
-    uint8 window_size;      //Block window size
+    int min_disparity;   //minimum disparity
+    int max_disparity;   //maximum disparity
+    uint8_t window_size;      //Block window size
 
     bool is_check_unique;   //whether to check uniqueness
-    float32 uniqueness_thres;   //The uniqueness constraint threshold (minimum cost - second minimum cost) / minimum cost > threshold indicates valid pixels.
+    float uniqueness_thres;   //The uniqueness constraint threshold (minimum cost - second minimum cost) / minimum cost > threshold indicates valid pixels.
 
     bool is_check_lr;       //whether to chenck uniqueness of right and left
-    float32 lrcheck_thres;  //The uniqueness constraint threshold of right and left
+    float lrcheck_thres;  //The uniqueness constraint threshold of right and left
 
     bool is_remove_speckles;    //whetner to remove little connected region
     int min_speckle_area;       //the minimum size
@@ -65,7 +66,7 @@ public:
      * \param winsize   input, the windows size of block
      * \param option    input, the parameters of BlockMatch
     */
-   bool Initialize(const sint32& width, const sint32& height,const BMOption& option);
+   bool Initialize(const int& width, const int& height,const BMOption& option);
 
    /**
     * \brief running stereo matching
@@ -73,7 +74,7 @@ public:
     * \param img_right  input, the pointer of right image
     * \param disp_left  output, left image parallax map pointer
    */
-  bool Match(const uint8* img_left,const uint8* img_right,float32* disp_left);
+  bool Match(const uint8_t* img_left,const uint8_t* img_right,float* disp_left);
 
   /*
    * \brief reset parameter
@@ -82,35 +83,35 @@ public:
    * \param winsize    input, the window size 
    * \param option     input,  the parameters of SemiGlobalMatching
    */
-  bool Reset(const uint32& width, const uint32& height,const uint8 winsize, const BMOption& option);
+  bool Reset(const uint32_t& width, const uint32_t& height,const uint8_t winsize, const BMOption& option);
 
 private:
     /** \brief BM paramaters*/
     BMOption option_;
 
-    uint16 width_;
-    uint16 height_;
+    uint16_t width_;
+    uint16_t height_;
 
     /** \brief left image pointer*/
-    const uint8* img_left_;
+    const uint8_t* img_left_;
 
     /** \brief left image mask pointer*/
-    std::vector<std::pair<uint16,uint16>> img_left_mask_;
+    std::vector<std::pair<uint16_t,uint16_t>> img_left_mask_;
 
     /** \brief right image pointer*/
-    const uint8* img_right_;
+    const uint8_t* img_right_;
 
     /** \brief right image mask pointer*/
-    std::vector<std::pair<uint16,uint16>> img_right_mask_;
+    std::vector<std::pair<uint16_t,uint16_t>> img_right_mask_;
 
     /** \brief init cost */
-    uint32* cost_init_;
+    uint32_t* cost_init_;
 
     /** \brief left image disparity*/
-    float32* disp_left_;
+    float* disp_left_;
 
     /** \brief right image disparity*/
-    float32* disp_right_;
+    float* disp_right_;
 
     /** \brief Flag of init*/
     bool is_initialized_;
@@ -123,3 +124,4 @@ private:
     /** \brief Mismatched area pixel vector*/
     std::vector<std::pair<int,int>> mismatches_;
 };
+#endif // !BLOCKMATCH_H_

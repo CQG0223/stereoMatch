@@ -2,7 +2,7 @@
 * Author    :QG Chen
 * Describle: main
 */
-#include<opencv2/opencv.hpp>
+#include<opencv4/opencv2/opencv.hpp>
 #include<iostream>
 #include<chrono>
 using namespace std::chrono;
@@ -30,24 +30,24 @@ int main(int argv, char **argc)
     cv::Mat src_img_left = cv::imread(path_left,cv::IMREAD_GRAYSCALE);
     cv::Mat src_img_right = cv::imread(path_right,cv::IMREAD_GRAYSCALE);
     cv::Mat img_left,img_right;
-    cv::resize(src_img_left,img_left,cv::Size(1024,896));
-    cv::resize(src_img_right,img_right,cv::Size(1024,896));
+    cv::resize(src_img_left,img_left,cv::Size(800,800));
+    cv::resize(src_img_right,img_right,cv::Size(800,800));
 
     if(img_left.data == nullptr || img_right.data == nullptr){
         std::cout<<"读入图像失败!"<<std::endl;
         return -1;
     }
     //==================================
-    const sint32 width = static_cast<uint32>(img_left.cols);
-    const sint32 height = static_cast<uint32>(img_right.rows);
+    const uint16_t width = static_cast<uint16_t>(img_left.cols);
+    const uint16_t height = static_cast<uint16_t>(img_right.rows);
 
     //左右图像的灰度数据
-    auto bytes_left = new uint8[width * height];
-    auto bytes_right = new uint8[width * height];
+    auto bytes_left = new uint8_t[width * height];
+    auto bytes_right = new uint8_t[width * height];
     for(int i = 0; i < height;i++){
         for(int j = 0; j < width; j++){
-            bytes_left[i * width + j] = img_left.at<uint8>(i,j);
-            bytes_right[i * width + j] = img_right.at<uint8>(i,j);
+            bytes_left[i * width + j] = img_left.at<uint8_t>(i,j);
+            bytes_right[i * width + j] = img_right.at<uint8_t>(i,j);
         }
     }
 
@@ -59,7 +59,7 @@ int main(int argv, char **argc)
     bm_option.min_disparity = argv < 4 ? 0 :atoi(argc[3]);
     bm_option.max_disparity = argv < 5 ? 64 : atoi(argc[4]);
     //框大小设置
-    bm_option.window_size = 3;
+    bm_option.window_size = 11;
     //一致性检查
     bm_option.is_check_lr = false;
     bm_option.lrcheck_thres = 1.0f;
@@ -88,7 +88,7 @@ int main(int argv, char **argc)
     printf("BM Matching...\n");
     start = std::chrono::steady_clock::now();
     // disparity数组保存子像素的视差结果
-    auto disparity = new float32[width * height]();
+    auto disparity = new float[width * height]();
     if (!bm.Match(bytes_left, bytes_right, disparity)) {
         std::cout << "BM匹配失败！" << std::endl;
         return -2;
@@ -102,9 +102,9 @@ int main(int argv, char **argc)
     // 注意，计算点云不能用disp_mat的数据，它是用来显示和保存结果用的。计算点云要用上面的disparity数组里的数据，是子像素浮点数
     cv::Mat disp_mat = cv::Mat(height, width, CV_8UC1);
     float min_disp = width, max_disp = -width;
-    for (sint32 i = 0; i < height; i++) {
-        for (sint32 j = 0; j < width; j++) {
-            const float32 disp = disparity[i * width + j];
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            const float disp = disparity[i * width + j];
             if (disp != Invalid_float) {
                 min_disp = std::min(min_disp, disp);
                 max_disp = std::max(max_disp, disp);
@@ -112,9 +112,9 @@ int main(int argv, char **argc)
         }
     }
 
-    for (sint32 i = 0; i < height; i++) {
-        for (sint32 j = 0; j < width; j++) {
-            const float32 disp = disparity[i * width + j];
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            const float disp = disparity[i * width + j];
             if (disp == Invalid_float) {
                 disp_mat.data[i * width + j] = 0;
             }

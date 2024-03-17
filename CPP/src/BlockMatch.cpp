@@ -17,7 +17,7 @@ BlockMatch::~BlockMatch(){
     is_initialized_ = false;
 }
 
-bool BlockMatch::Initialize(const sint32& width, const sint32& height,const BMOption& option){
+bool BlockMatch::Initialize(const int& width, const int& height,const BMOption& option){
     //图像尺寸
     width_ = width;
     height_ = height;
@@ -31,23 +31,23 @@ bool BlockMatch::Initialize(const sint32& width, const sint32& height,const BMOp
     block_ = new bm_util::BM_Unit(winsize,winsize,height,width);
     
     //左右图像
-    const sint32 image_size = height_ * width_;
+    const int image_size = height_ * width_;
 
-    img_left_ = new uint8[image_size]();
-    img_right_ = new uint8[image_size]();
+    img_left_ = new uint8_t[image_size]();
+    img_right_ = new uint8_t[image_size]();
 
     //视差范围
-    const sint32 disp_range = option_.max_disparity - option_.min_disparity;
+    const int disp_range = option_.max_disparity - option_.min_disparity;
     if(disp_range <= 0) return false;
 
     //匹配代价初始化
-    const sint32 size = width * height * disp_range;
-    cost_init_ = new uint32[size]();
+    const int size = width * height * disp_range;
+    cost_init_ = new uint32_t[size]();
     std::fill(cost_init_,cost_init_+size,UINT32_MAX);
 
     //视差图初始化
-    disp_left_ = new float32[image_size]();
-    disp_right_ = new float32[image_size]();
+    disp_left_ = new float[image_size]();
+    disp_right_ = new float[image_size]();
     std::fill(disp_left_,disp_left_+image_size,Invalid_float);
     std::fill(disp_right_,disp_right_+image_size,Invalid_float);
     
@@ -74,17 +74,17 @@ void BlockMatch::source_process_effective(){
         {
             auto gray_left = img_left_[i*width_ + j];
             if(gray_left != 0){
-                img_left_mask_.push_back(std::pair<uint16,uint16>(i,j));
+                img_left_mask_.push_back(std::pair<uint16_t,uint16_t>(i,j));
             }
             auto gray_right = img_right_[i*width_ + j];
             if(gray_right != 0){
-                img_right_mask_.push_back(std::pair<uint16,uint16>(i,j));
+                img_right_mask_.push_back(std::pair<uint16_t,uint16_t>(i,j));
             }
         }
     }
 }
 
-bool BlockMatch::Match(const uint8* img_left,const uint8* img_right,float32* disp_left){
+bool BlockMatch::Match(const uint8_t* img_left, const uint8_t* img_right,float* disp_left){
     if(!is_initialized_ || img_left == nullptr || img_right == nullptr) return false;
     img_left_ = img_left;
     img_right_ = img_right;
@@ -107,15 +107,15 @@ bool BlockMatch::Match(const uint8* img_left,const uint8* img_right,float32* dis
     printf("computing disparities! timing :	%lf s\n", tt.count() / 1000.0);
 
     //输出视差图
-    std::memcpy(disp_left,disp_left_,height_ * width_ * sizeof(float32));
+    std::memcpy(disp_left,disp_left_,height_ * width_ * sizeof(float));
     return true;
 }
 
 void BlockMatch::ComputeCost() const{
-    const sint32& min_disparity = option_.min_disparity;
-    const sint32& max_disparity = option_.max_disparity;
-    const sint32 disp_range = max_disparity - min_disparity;
-    const sint8& win_size = option_.window_size;
+    const int& min_disparity = option_.min_disparity;
+    const int& max_disparity = option_.max_disparity;
+    const int disp_range = max_disparity - min_disparity;
+    const int& win_size = option_.window_size;
 
     auto half = (win_size - 1)/2;
     //逐像素计算匹配代价
@@ -131,7 +131,7 @@ void BlockMatch::ComputeCost() const{
                     //cost = UINT32_MAX;
                     continue;
                 }
-                auto right = std::pair<uint16,uint16>(i,j+dd);
+                auto right = std::pair<uint16_t,uint16_t>(i,j+dd);
                 cost = block_->cost_calculate_SAD(left,right,img_left_,img_right_);
             }
     }
@@ -151,19 +151,19 @@ void BlockMatch::ComputeDisparity() const{
     const auto uniqueness_thres = option_.uniqueness_thres;
 
     //为了加快读取效率,把单个像素的所有代价值存储在局部数组之中
-    std::vector<uint16> cost_local(disp_range);
+    std::vector<int> cost_local(disp_range);
 
     //逐像素计算最优视差
     for(auto val:img_left_mask_){
         auto i = val.first;
         auto j = val.second;
-        uint16 min_cost = UINT16_MAX;
-        uint16 sec_min_cost = UINT16_MAX;
-        sint32 best_disparity = - (max_disparity - min_disparity) + 1;
+        int min_cost = UINT16_MAX;
+        int sec_min_cost = UINT16_MAX;
+        int best_disparity = - (max_disparity - min_disparity) + 1;
 
         //遍历视差范围内的所有代价值，输出最小代价值及对应的视差值
-        for(sint32 d = min_disparity;d < max_disparity; d++){
-            const sint32 d_inx = d - min_disparity;
+        for(int d = min_disparity;d < max_disparity; d++){
+            const int d_inx = d - min_disparity;
             const auto& cost = cost_local[d_inx] = cost_init_[i * width * disp_range + j * disp_range + d_inx];
             if(min_cost > cost){
                 min_cost = cost;
@@ -172,7 +172,7 @@ void BlockMatch::ComputeDisparity() const{
         }
         if(is_check_unique){
             //再遍历一遍,输出次最优代价值
-            for(sint32 d = min_disparity;d < max_disparity;d++){
+            for(int d = min_disparity;d < max_disparity;d++){
                 if(d == best_disparity) continue;
                 const auto& cost = cost_local[d - min_disparity];
                 sec_min_cost = std::min(sec_min_cost,cost);
@@ -180,7 +180,7 @@ void BlockMatch::ComputeDisparity() const{
 
             // 判断唯一性约束
             // 若(min-sec)/min < min*(1-uniquness)，则为无效估计
-            if (sec_min_cost - min_cost <= static_cast<uint16>(min_cost * (1 - uniqueness_thres))) {
+            if (sec_min_cost - min_cost <= static_cast<uint16_t>(min_cost * (1 - uniqueness_thres))) {
                     disparity[i * width + j] = Invalid_float;
                     continue;
                 }
@@ -192,7 +192,7 @@ void BlockMatch::ComputeDisparity() const{
             disparity[i * width + j] = Invalid_float;
             continue;
         }
-        disparity[i * width + j] = static_cast<float32>(best_disparity);
+        disparity[i * width + j] = static_cast<float>(best_disparity);
         /*
         // 最优视差前一个视差的代价值cost_1，后一个视差的代价值cost_2
         const sint32 idx_1 = best_disparity - 1 - min_disparity;
@@ -205,7 +205,7 @@ void BlockMatch::ComputeDisparity() const{
         */
     }
 }
-bool BlockMatch::Reset(const uint32& width, const uint32& height,const uint8 winsize, const BMOption& option){
+bool BlockMatch::Reset(const uint32_t& width, const uint32_t& height,const uint8_t winsize, const BMOption& option){
     //释放内存
     Release();
 
