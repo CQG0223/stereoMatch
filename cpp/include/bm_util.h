@@ -6,10 +6,6 @@
 #define BMUTIL_H_
 #include <string>
 
-#ifndef SAFE_DELETE
-#define SAFE_DELETE(P) {if(P) delete[](P);P = nullptr;}
-#endif 
-
 namespace bm_util
 {
 	class BM_Unit
@@ -39,11 +35,11 @@ namespace bm_util
 		const uint8_t* left_pointer,const uint8_t* right_pointer){
 			auto const left_raws = left_center.first;
 			auto const left_cols = left_center.second;
-			auto const left_index = left_raws*image_width_ + left_cols;
+			auto const left_index = left_raws * image_width_ + left_cols;
 
 			auto const right_raws = right_center.first;
 			auto const right_cols = right_center.second;
-			auto const right_index = right_raws*image_width_ + right_cols;
+			auto const right_index = right_raws * image_width_ + right_cols;
 			//索引范围判定
 			if(left_index - win_width_ < 0 || left_index + win_width_ >= image_width_ * image_height_ ||
 			   right_index - win_width_ < 0 || right_index + win_width_ >= image_width_ * image_height_){

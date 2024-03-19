@@ -30,27 +30,16 @@ int main(int argv, char **argc)
     cv::Mat src_img_left = cv::imread(path_left,cv::IMREAD_GRAYSCALE);
     cv::Mat src_img_right = cv::imread(path_right,cv::IMREAD_GRAYSCALE);
     cv::Mat img_left,img_right;
-    cv::resize(src_img_left,img_left,cv::Size(800,800));
-    cv::resize(src_img_right,img_right,cv::Size(800,800));
+    cv::resize(src_img_left,img_left,cv::Size(400,400));
+    cv::resize(src_img_right,img_right,cv::Size(400,400));
 
     if(img_left.data == nullptr || img_right.data == nullptr){
         std::cout<<"读入图像失败!"<<std::endl;
         return -1;
     }
-    //==================================
-    const uint16_t width = static_cast<uint16_t>(img_left.cols);
-    const uint16_t height = static_cast<uint16_t>(img_right.rows);
 
-    //左右图像的灰度数据
-    auto bytes_left = new uint8_t[width * height];
-    auto bytes_right = new uint8_t[width * height];
-    for(int i = 0; i < height;i++){
-        for(int j = 0; j < width; j++){
-            bytes_left[i * width + j] = img_left.at<uint8_t>(i,j);
-            bytes_right[i * width + j] = img_right.at<uint8_t>(i,j);
-        }
-    }
-
+    const auto width = img_left.cols;
+    const auto height = img_left.rows;
     printf("Loading Views ... Done!\n");
 
     //BM匹配参数设计
@@ -75,7 +64,7 @@ int main(int argv, char **argc)
     //初始化
     printf("BM Initializing... \n");
     auto start = std::chrono::steady_clock::now();
-    if (!bm.Initialize(width, height, bm_option)) {
+    if (!bm.Initialize(img_left, img_right, bm_option)) {
         std::cout << "BM初始化失败！" << std::endl;
         return -2;
     }
@@ -89,7 +78,7 @@ int main(int argv, char **argc)
     start = std::chrono::steady_clock::now();
     // disparity数组保存子像素的视差结果
     auto disparity = new float[width * height]();
-    if (!bm.Match(bytes_left, bytes_right, disparity)) {
+    if (!bm.Match(img_left, img_right, disparity)) {
         std::cout << "BM匹配失败！" << std::endl;
         return -2;
     }
@@ -125,6 +114,7 @@ int main(int argv, char **argc)
         }
     }
 
+    //std::cout<<cv::imwrite("disp.png", disp_mat)<<std::endl;
     cv::imshow("视差图", disp_mat);
     cv::Mat disp_color;
     applyColorMap(disp_mat, disp_color, cv::COLORMAP_JET);

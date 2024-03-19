@@ -2,12 +2,13 @@
 
 .vscode
 
-CPP/build/
+*/build/
 
 __pycache__/
 
 # Prerequisites
 *.d
+reocord.md
 
 # Compiled Object files
 *.slo

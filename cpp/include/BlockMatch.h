@@ -5,9 +5,14 @@
 #ifndef BLOCKMATCH_H_
 #define BLOCKMATCH_H_
 
+#ifndef SAFE_DELETE
+#define SAFE_DELETE(P) {if(P) delete[](P);P = nullptr;}
+#endif // !SAFE_DELETE
 #include<vector>
 #include<limits>
 #include"bm_util.h"
+#include<opencv4/opencv2/opencv.hpp>
+#include<gtest/gtest.h>
 
 constexpr auto Invalid_float = std::numeric_limits<float>::infinity();
 
@@ -28,11 +33,6 @@ constexpr auto Invalid_float = std::numeric_limits<float>::infinity();
 
     bool is_remove_speckles;    //whetner to remove little connected region
     int min_speckle_area;       //the minimum size
-
-    BMOption():min_disparity(0),max_disparity(64),window_size(0),
-                is_check_unique(false),uniqueness_thres(0.95f),
-                is_check_lr(false),lrcheck_thres(1.0f),
-                is_remove_speckles(false),min_speckle_area(20){}
    };
 
 /**
@@ -40,6 +40,7 @@ constexpr auto Invalid_float = std::numeric_limits<float>::infinity();
 */
 class BlockMatch
 {
+friend ::testing::Test;
 private:
     /** \brief cost calculte*/
     void ComputeCost() const;
@@ -55,35 +56,28 @@ private:
 
     /** \brief Effective values ​​of images(逐像素统计有效点,并将之放在对应的const vector之中)*/
     void source_process_effective();
+
+    // \brief 计算SAD
+    uint32_t caculateSAD(const cv::Mat&, const cv::Mat&) const;
+
+    void computingDispPerPixel(const std::vector<std::pair<uint16_t,uint16_t>>&, const uint32_t*, float*) const; 
 public:
-    BlockMatch();
-    ~BlockMatch();
+    BlockMatch():width_{0},height_{0},left_cost_r_{nullptr},disp_left_{nullptr},
+                disp_right_{nullptr},is_initialized_{false}{};
+    ~BlockMatch(){
+        Release();
+        is_initialized_ = false;
+    };
 
-    /**
-     * \brief The initialization of the class
-     * \param width     input, the width of rectified stereo image
-     * \param height    input, the height of rectified stereo image
-     * \param winsize   input, the windows size of block
-     * \param option    input, the parameters of BlockMatch
-    */
-   bool Initialize(const int& width, const int& height,const BMOption& option);
+    //\brief The initialization of the class
+    bool Initialize(const cv::Mat& left, const cv::Mat& right,const BMOption& option);
 
-   /**
-    * \brief running stereo matching
-    * \param img_left   input, the pointer of left image
-    * \param img_right  input, the pointer of right image
-    * \param disp_left  output, left image parallax map pointer
-   */
-  bool Match(const uint8_t* img_left,const uint8_t* img_right,float* disp_left);
+   
+    //\brief running stereo matching
+    bool Match(cv::Mat&, cv::Mat&, float* disp_left);
 
-  /*
-   * \brief reset parameter
-   * \param width      input, the width of rectified stereo image 
-   * \param height     input, the height of rectified stereo image
-   * \param winsize    input, the window size 
-   * \param option     input,  the parameters of SemiGlobalMatching
-   */
-  bool Reset(const uint32_t& width, const uint32_t& height,const uint8_t winsize, const BMOption& option);
+    // \brief reset parameter
+    bool Reset(const cv::Mat& left, const cv::Mat& right,const BMOption& option);
 
 private:
     /** \brief BM paramaters*/
@@ -92,20 +86,21 @@ private:
     uint16_t width_;
     uint16_t height_;
 
-    /** \brief left image pointer*/
-    const uint8_t* img_left_;
+    /** \brief left image*/
+    cv::Mat img_left_;
+
+    /** \brief right image*/
+    cv::Mat img_right_;
 
     /** \brief left image mask pointer*/
     std::vector<std::pair<uint16_t,uint16_t>> img_left_mask_;
 
-    /** \brief right image pointer*/
-    const uint8_t* img_right_;
-
     /** \brief right image mask pointer*/
     std::vector<std::pair<uint16_t,uint16_t>> img_right_mask_;
 
-    /** \brief init cost */
-    uint32_t* cost_init_;
+    /** \brief left image cost */
+    uint32_t* left_cost_r_;
+    uint32_t* right_cost_l_;
 
     /** \brief left image disparity*/
     float* disp_left_;
@@ -115,8 +110,6 @@ private:
 
     /** \brief Flag of init*/
     bool is_initialized_;
-
-    bm_util::BM_Unit* block_;
 
     /** \brief Occluded area pixel vector*/
     std::vector<std::pair<int,int>> occlusions_;
