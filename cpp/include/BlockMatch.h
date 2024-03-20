@@ -33,6 +33,7 @@ constexpr auto Invalid_float = std::numeric_limits<float>::infinity();
 
     bool is_remove_speckles;    //whetner to remove little connected region
     int min_speckle_area;       //the minimum size
+    float diff_insame;
    };
 
 /**
@@ -49,7 +50,7 @@ private:
     void ComputeDisparity() const;
 
     /** \brief check uniqueness of left and right*/
-    void LRCheck();
+    void LRCheck(float*, float*) const;
 
     /** \brief Memory release*/
     void Release();
@@ -60,7 +61,11 @@ private:
     // \brief 计算SAD
     uint32_t caculateSAD(const cv::Mat&, const cv::Mat&) const;
 
-    void computingDispPerPixel(const std::vector<std::pair<uint16_t,uint16_t>>&, const uint32_t*, float*) const; 
+    // \brief 逐像素计算视差
+    void computingDispPerPixel(const std::vector<std::pair<uint16_t,uint16_t>>&, const uint32_t*, float*) const;
+
+    // \brief 消除小连通区域(区域跟踪算法)
+    void removeSpeckles(float*) const;
 public:
     BlockMatch():width_{0},height_{0},left_cost_r_{nullptr},disp_left_{nullptr},
                 disp_right_{nullptr},is_initialized_{false}{};

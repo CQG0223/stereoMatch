@@ -5,13 +5,14 @@ from lib.calibration import Calibration
 import configparser
 from lib.calibrating import ProcessCalibing
 
-LOAD_DIR = '/media/cqg/CQG/CQGData/3L3DR_Res/C0010/Load'
-IMG_DIR = '/media/cqg/CQG/CQGData/3L3DR_Res/C0010/target'
+#LOAD_DIR = '/media/cqg/CQG/CQGData/3L3DR_Res/C0010/Load'
+#IMG_DIR = '/media/cqg/CQG/CQGData/3L3DR_Res/C0010/target'
 
-imgLPath = '/media/cqg/CQG/CQGData/3L3DR_Res/C0010/absoluteImg/L/11_18L.bmp'
-imgRPath = '/media/cqg/CQG/CQGData/3L3DR_Res/C0010/absoluteImg/R/11_18R.bmp'
+imgLPath = '/media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/L/7_16.bmp'
+imgRPath = '/media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/R/7_16.bmp'
 
 if __name__ == '__main__':
+    '''
     imgL = cv2.imread(imgLPath,1)
     imgR = cv2.imread(imgRPath,1)
     config = configparser.ConfigParser()
@@ -23,9 +24,13 @@ if __name__ == '__main__':
     else:
         calibrating = ProcessCalibing(config,calibrator)
         recedL,recedR = calibrating.rectify(imgL,imgR)
-        #recedL = cv2.resize(recedL,(320,240))
-        #recedR = cv2.resize(recedR,(320,240))
+        recedL = cv2.resize(recedL,(320,240))
+        recedR = cv2.resize(recedR,(320,240))
         #cv2.imwrite("/media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/L/11_18L.bmp",recedL)
         #cv2.imwrite("/media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/R/11_18R.bmp",recedR)
         getSAD(recedL,recedR)
         #getSADMulti(recedL,recedR,11,500)
+    '''
+    imgL = cv2.imread(imgLPath,0)
+    imgR = cv2.imread(imgRPath,0)
+    getSAD(imgL,imgR)

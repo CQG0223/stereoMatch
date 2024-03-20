@@ -6,8 +6,8 @@
 //#define DEBUG
 
 TEST(imageTest, maintest){
-    auto pathleft = std::string("/media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/L/6_16.bmp");
-    auto pathright = std::string("/media/cqg/CQG/CQGData/3L3DR_Res/C0010/recded/R/6_16.bmp");
+    auto pathleft = std::string("/home/cqg/githubProject/stereoMatch/data/L/8_16.bmp");
+    auto pathright = std::string("/home/cqg/githubProject/stereoMatch/data/R/8_16.bmp");
 
     auto leftTemp = cv::imread(pathleft,0);
     auto rightTemp = cv::imread(pathright,0);
@@ -18,8 +18,8 @@ TEST(imageTest, maintest){
 
     const auto width = left.cols;
     const auto height = left.rows;
-    
-    BMOption option{0,200,3,false,1.0f,false,1.0f,false,20};
+
+    BMOption option{0,200,3,false,1.0f,true,5.0f,true,100,10};
     BlockMatch bm;
 
     #ifdef DEBUG

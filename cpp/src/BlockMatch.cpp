@@ -163,10 +163,15 @@ void BlockMatch::ComputeDisparity() const{
 
     //逐像素计算最优视差
     computingDispPerPixel(img_left_mask_, left_cost_r_, disp_left_);
+    //左右一致性检查
     if(option_.is_check_lr){
         computingDispPerPixel(img_right_mask_, right_cost_l_, disp_right_);
+        LRCheck(disp_left_, disp_right_);
     }
-
+    //
+    if(option_.is_remove_speckles){
+        removeSpeckles(disp_left_);
+    }
 }
 bool BlockMatch::Reset(const cv::Mat& left, const cv::Mat& right,const BMOption& option){
     //释放内存
@@ -185,6 +190,8 @@ void BlockMatch::computingDispPerPixel(const std::vector<std::pair<uint16_t,uint
     const auto width = width_;
     const auto height = height_;
 
+    std::vector<uint32_t> costVector(disp_range,0);
+
     for(auto val = 0; val < mask.size();val++){
         auto i = mask[val].first;
         auto j = mask[val].second;
@@ -193,9 +200,9 @@ void BlockMatch::computingDispPerPixel(const std::vector<std::pair<uint16_t,uint
         int best_disparity = 0;
 
         //遍历视差范围内的所有代价值，输出最小代价值及对应的视差值
-        for(int d = min_disparity;d < max_disparity; d++){
+         for(int d = min_disparity;d < max_disparity; d++){
             const int d_inx = d - min_disparity;
-            uint32_t cost = left_cost_r_[(i * width_ + j) * disp_range + d - min_disparity];
+            uint32_t cost = costVector[d_inx] = costValue[(i * width_ + j) * disp_range + d - min_disparity];
             if(min_cost > cost){
                 min_cost = cost;
                 best_disparity = d;
@@ -205,7 +212,7 @@ void BlockMatch::computingDispPerPixel(const std::vector<std::pair<uint16_t,uint
             //再遍历一遍,输出次最优代价值
             for(int d = min_disparity;d < max_disparity;d++){
                 if(d == best_disparity) continue;
-                const auto& cost = costValue[d - min_disparity];
+                const auto& cost = costVector[d - min_disparity];
                 sec_min_cost = std::min(sec_min_cost,cost);
             }
 
@@ -218,21 +225,105 @@ void BlockMatch::computingDispPerPixel(const std::vector<std::pair<uint16_t,uint
         }
 
         //无效像素筛选
-        /*
         if(best_disparity == min_disparity || best_disparity == max_disparity){
-            disparity[i * width + j] = Invalid_float;
+            outputDisp[i * width + j] = Invalid_float;
             continue;
-        }*/
-        outputDisp[i * width + j] = static_cast<float>(best_disparity);
-        /*
+        }
+        //outputDisp[i * width + j] = static_cast<float>(best_disparity);
+        
         // 最优视差前一个视差的代价值cost_1，后一个视差的代价值cost_2
-        const sint32 idx_1 = best_disparity - 1 - min_disparity;
-        const sint32 idx_2 = best_disparity + 1 - min_disparity;
-        const uint16 cost_1 = cost_local[idx_1];
-        const uint16 cost_2 = cost_local[idx_2];
+        const auto idx_1 = best_disparity - 1 - min_disparity;
+        const auto idx_2 = best_disparity + 1 - min_disparity;
+        const auto cost_1 = static_cast<int>(costValue[idx_1]);
+        const auto cost_2 = static_cast<int>(costValue[idx_2]);
         // 解一元二次曲线极值
-        const uint16 denom = std::max(1, cost_1 + cost_2 - 2 * min_cost);
-        disparity[i * width + j] = static_cast<float32>(best_disparity) + static_cast<float32>(cost_1 - cost_2) / (denom * 2.0f);
-        */
+        const auto denom = std::max(1, cost_1 + cost_2 - 2 * static_cast<int>(min_cost));
+        outputDisp[i * width + j] = static_cast<float>(best_disparity) + static_cast<float>(cost_1 - cost_2) / (denom * 2.0f);
+    }
+}
+
+void BlockMatch::LRCheck(float* left, float* right) const{
+    
+    const auto width = width_;
+    const auto height = height_;
+    const auto threshold = option_.lrcheck_thres;
+    for(auto val = 0; val < img_left_mask_.size(); val++){
+        auto i = img_left_mask_[val].first;
+        auto j = img_left_mask_[val].second;
+
+        auto& leftD = left[i * width + j];
+        const auto col_right = static_cast<int32_t>(j - leftD + 0.5);
+
+        if(col_right > 0 && col_right < width){
+             //右影像上同名像素的视差值
+             const auto& rightD = right[i * width + col_right];
+
+             //判断两个视差值是否一致(差值在阈值范围内)
+             if(std::abs(leftD - rightD) > threshold){
+                //左右不一致
+                leftD = Invalid_float;
+             }
+        }else{
+            // 通过视差值在右影像上找不到同名像素（超出影像范围）
+            leftD = Invalid_float;
+        }
+    }
+}
+
+void BlockMatch::removeSpeckles(float* left) const{
+    const auto width = width_;
+    const auto height = height_;
+    const auto min_speckle_area = option_.min_speckle_area;
+    const auto diff_insame = option_.diff_insame;
+
+    // 定义标记像素是否访问的数组
+    std::vector<bool> visited(width * height, false);
+    for(int i = 0; i < height; i++){
+        for(int j = 0; j < width; j++){
+            //跳过已经访问的元素及无效元素
+            if(visited[i * width + j] || left[i * width + j] == Invalid_float){
+                continue;;
+            }
+            //广度优先搜索，区域跟踪，将连通区域面积小于阈值的区域设置为无效值
+            std::vector<std::pair<int,int>> vec;
+            vec.emplace_back(i,j);
+            visited[i * width + j] = true;
+            int cur = 0;
+            int next = 0;
+            do
+            {
+                //广度优先搜索
+                next = vec.size();
+                for(int k = 0; k < next; k++){
+                    const auto& pixel = vec[k];
+                    const int row = pixel.first;
+                    const int col = pixel.second;
+                    const auto& disp_base = left[row * width + col];
+                    //8邻域遍历
+                    for(int r = -1; r <= 1; r++){
+                        for(int c = -1; c <= 1; c++){
+                            if(r == 0 && c == 0){
+                                continue;
+                            }
+                            int rowr = row + r;
+                            int colc = col + c;
+                            if (rowr >= 0 && rowr < height && colc >= 0 && colc < width) {
+                                if(!visited[rowr * width + colc] && abs(left[rowr * width + colc] - disp_base) <= diff_insame) {
+                                    vec.emplace_back(rowr, colc);
+                                    visited[rowr * width + colc] = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                cur = next;
+            } while (next < vec.size());
+            // 把连通域面积小于阈值的区域视差全设为无效值
+            if(vec.size() < min_speckle_area) {
+				for(auto& pix:vec) {
+					left[pix.first * width + pix.second] = Invalid_float;
+				}
+			}
+        }
     }
 }
