@@ -7,7 +7,8 @@ set(INCLU_DIR "include")
 
 set(TEST_SOURCE_FILES
     #googleTest/blockMatchTest.cpp
-    googleTest/imageTest.cpp
+    #googleTest/imageTest.cpp
+    googleTest/pyramidCreateTest.cpp
 )
 
 set(TEST_TARGET_NAME imageTest)
